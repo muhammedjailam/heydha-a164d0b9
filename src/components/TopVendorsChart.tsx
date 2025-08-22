@@ -2,17 +2,30 @@ import { useMemo, useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { Transaction, VendorSpending } from '@/types/financial';
+import { getAllCategories, updateVendorCategory, getVendorCategory } from '@/utils/categoryManager';
+import { useToast } from '@/hooks/use-toast';
 
 interface TopVendorsChartProps {
   transactions: Transaction[];
-  onCategoryUpdate: (transactionId: string, category: string) => void;
   topN?: number;
+  onCategoryUpdate?: (transactionId: string, category: string) => void;
 }
 
-const TopVendorsChart = ({ transactions, onCategoryUpdate, topN = 10 }: TopVendorsChartProps) => {
+const TopVendorsChart = ({ transactions, topN = 10, onCategoryUpdate }: TopVendorsChartProps) => {
   const [expandedVendors, setExpandedVendors] = useState<Set<string>>(new Set());
+  const [showNewCategoryModal, setShowNewCategoryModal] = useState(false);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const [currentVendor, setCurrentVendor] = useState<{ name: string; transactions: Transaction[] } | null>(null);
+  const { toast } = useToast();
+  
+  const availableCategories = getAllCategories();
   
   const cleanVendorName = (description: string): string => {
     // Remove =" and extra quotes and clean up the description
@@ -25,6 +38,42 @@ const TopVendorsChart = ({ transactions, onCategoryUpdate, topN = 10 }: TopVendo
 
   const truncateVendor = (vendor: string, maxLength: number = 25): string => {
     return vendor.length > maxLength ? vendor.substring(0, maxLength) + '...' : vendor;
+  };
+  
+  const handleVendorCategoryChange = (vendorName: string, category: string, vendorTransactions: Transaction[]) => {
+    if (category === 'ADD_NEW') {
+      setCurrentVendor({ name: vendorName, transactions: vendorTransactions });
+      setShowNewCategoryModal(true);
+      return;
+    }
+    
+    updateVendorCategory(vendorName, category);
+    // Update all transactions for this vendor
+    vendorTransactions.forEach(transaction => {
+      onCategoryUpdate?.(transaction.id, category);
+    });
+  };
+  
+  const handleCreateNewCategory = () => {
+    if (!newCategoryName.trim() || !currentVendor) return;
+    
+    // The category will be automatically available after this call
+    updateVendorCategory(currentVendor.name, newCategoryName.trim());
+    
+    // Update all transactions for this vendor
+    currentVendor.transactions.forEach(transaction => {
+      onCategoryUpdate?.(transaction.id, newCategoryName.trim());
+    });
+    
+    toast({
+      title: "Category created",
+      description: `"${newCategoryName.trim()}" has been added and applied to ${currentVendor.name}.`
+    });
+    
+    // Reset form state
+    setNewCategoryName('');
+    setCurrentVendor(null);
+    setShowNewCategoryModal(false);
   };
   
   const vendorData = useMemo(() => {
@@ -80,80 +129,154 @@ const TopVendorsChart = ({ transactions, onCategoryUpdate, topN = 10 }: TopVendo
   };
   
   return (
-    <Card className="financial-card">
-      <CardHeader>
-        <CardTitle className="gradient-text">Top Vendors by Spending</CardTitle>
-      </CardHeader>
-      <CardContent>
-        {vendorData.length > 0 ? (
-          <div className="rounded-md border">
-            <Table>
-              <TableHeader>
-                <TableRow>
-                  <TableHead className="font-semibold">Vendor</TableHead>
-                  <TableHead className="text-right font-semibold">Total Spent</TableHead>
-                  <TableHead className="text-right font-semibold">Transactions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {vendorData.map((vendor) => {
-                  const isExpanded = expandedVendors.has(vendor.fullVendor);
-                  return (
-                    <>
-                      {/* Vendor Summary Row */}
-                      <TableRow 
-                        key={vendor.vendor}
-                        className="cursor-pointer hover:bg-muted/50"
-                        onClick={() => toggleVendorExpansion(vendor.fullVendor)}
-                      >
-                        <TableCell className="font-medium">
-                          <div className="flex items-center gap-2">
-                            {isExpanded ? (
-                              <ChevronDown className="h-4 w-4" />
-                            ) : (
-                              <ChevronRight className="h-4 w-4" />
-                            )}
-                            {vendor.vendor}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right font-mono">
-                          {formatCurrency(vendor.amount)}
-                        </TableCell>
-                        <TableCell className="text-right text-muted-foreground">
-                          {vendor.transactions}
-                        </TableCell>
-                      </TableRow>
-                      
-                      {/* Individual Transaction Rows */}
-                      {isExpanded && vendor.individualTransactions.map((transaction) => (
+    <>
+      <Card className="financial-card">
+        <CardHeader>
+          <CardTitle className="gradient-text">Top Vendors by Spending</CardTitle>
+        </CardHeader>
+        <CardContent>
+          {vendorData.length > 0 ? (
+            <div className="rounded-md border">
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead className="font-semibold">Vendor</TableHead>
+                    <TableHead className="text-right font-semibold">Total Spent</TableHead>
+                    <TableHead className="text-right font-semibold">Transactions</TableHead>
+                    <TableHead className="text-right font-semibold">Category</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {vendorData.map((vendor) => {
+                    const isExpanded = expandedVendors.has(vendor.fullVendor);
+                    return (
+                      <>
+                        {/* Vendor Summary Row */}
                         <TableRow 
-                          key={`${vendor.fullVendor}-${transaction.id}`}
-                          className="bg-muted/20 border-l-4 border-l-secondary"
+                          key={vendor.vendor}
+                          className="cursor-pointer hover:bg-muted/50"
+                          onClick={() => toggleVendorExpansion(vendor.fullVendor)}
                         >
-                          <TableCell className="pl-8 text-sm text-muted-foreground">
-                            {format(transaction.date, 'MMM dd, yyyy')}
+                          <TableCell className="font-medium">
+                            <div className="flex items-center gap-2">
+                              {isExpanded ? (
+                                <ChevronDown className="h-4 w-4" />
+                              ) : (
+                                <ChevronRight className="h-4 w-4" />
+                              )}
+                              {vendor.vendor}
+                            </div>
                           </TableCell>
-                          <TableCell className="text-right text-sm text-muted-foreground">
-                            {transaction.category || 'Uncategorized'}
+                          <TableCell className="text-right font-mono">
+                            {formatCurrency(vendor.amount)}
                           </TableCell>
-                          <TableCell className="text-right font-mono text-sm">
-                            {formatCurrency(transaction.amount)}
-                          </TableCell>                   
+                          <TableCell className="text-right text-muted-foreground">
+                            {vendor.transactions}
+                          </TableCell>
+                          <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                            <Select
+                              value={getVendorCategory(vendor.fullVendor) || ''}
+                              onValueChange={(value) => handleVendorCategoryChange(vendor.fullVendor, value, vendor.individualTransactions)}
+                            >
+                              <SelectTrigger className="w-32 bg-background border-border z-50">
+                                <SelectValue placeholder="Select..." />
+                              </SelectTrigger>
+                              <SelectContent className="bg-background border-border shadow-lg z-50">
+                                {availableCategories.map(category => (
+                                  <SelectItem key={category} value={category}>
+                                    {category}
+                                  </SelectItem>
+                                ))}
+                                <SelectItem value="ADD_NEW">
+                                  + Add New Category
+                                </SelectItem>
+                              </SelectContent>
+                            </Select>
+                          </TableCell>
                         </TableRow>
-                      ))}
-                    </>
-                  );
-                })}
-              </TableBody>
-            </Table>
+                        
+                        {/* Individual Transaction Rows */}
+                        {isExpanded && vendor.individualTransactions.map((transaction) => (
+                          <TableRow 
+                            key={`${vendor.fullVendor}-${transaction.id}`}
+                            className="bg-muted/20 border-l-4 border-l-secondary"
+                          >
+                            <TableCell className="pl-8 text-sm text-muted-foreground">
+                              {format(transaction.date, 'MMM dd, yyyy')}
+                            </TableCell>
+                            <TableCell className="text-right font-mono text-sm">
+                              {formatCurrency(transaction.amount)}
+                            </TableCell>
+                            <TableCell className="text-right text-sm text-muted-foreground">
+                              {transaction.category || 'Uncategorized'}
+                            </TableCell>
+                            <TableCell className="text-right text-sm text-muted-foreground">
+                              -
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </div>
+          ) : (
+            <div className="text-center text-muted-foreground py-8">
+              No vendor data available
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      
+      {/* New Category Modal */}
+      <Dialog open={showNewCategoryModal} onOpenChange={setShowNewCategoryModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Add New Category</DialogTitle>
+          </DialogHeader>
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="categoryName">Category Name</Label>
+              <Input
+                id="categoryName"
+                placeholder="Enter category name"
+                value={newCategoryName}
+                onChange={(e) => setNewCategoryName(e.target.value)}
+                onKeyPress={(e) => {
+                  if (e.key === 'Enter') {
+                    handleCreateNewCategory();
+                  }
+                }}
+              />
+            </div>
+            {currentVendor && (
+              <p className="text-sm text-muted-foreground">
+                This category will be applied to all transactions from "{currentVendor.name}".
+              </p>
+            )}
           </div>
-        ) : (
-          <div className="text-center text-muted-foreground py-8">
-            No vendor data available
+          <div className="flex justify-end space-x-2">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setShowNewCategoryModal(false);
+                setNewCategoryName('');
+                setCurrentVendor(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button 
+              onClick={handleCreateNewCategory}
+              disabled={!newCategoryName.trim()}
+            >
+              Create Category
+            </Button>
           </div>
-        )}
-      </CardContent>
-    </Card>
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 
