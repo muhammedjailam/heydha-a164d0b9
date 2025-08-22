@@ -93,19 +93,19 @@ const PrintLayout: React.FC<PrintLayoutProps> = ({ transactions }) => {
           <div>
             <p className="text-sm text-gray-600">Total Income</p>
             <p className="text-2xl font-bold text-green-600">
-              ${totalIncome.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              MVR {totalIncome.toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </p>
           </div>
           <div>
             <p className="text-sm text-gray-600">Total Expenses</p>
             <p className="text-2xl font-bold text-red-600">
-              ${totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              MVR {totalExpenses.toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </p>
           </div>
           <div>
             <p className="text-sm text-gray-600">Net Flow</p>
             <p className={`text-2xl font-bold ${netFlow >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-              ${netFlow.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+              MVR {netFlow.toLocaleString('en-US', { minimumFractionDigits: 2 })}
             </p>
           </div>
         </div>
@@ -127,7 +127,7 @@ const PrintLayout: React.FC<PrintLayoutProps> = ({ transactions }) => {
                 <div className="text-right">
                   <p className="text-sm text-gray-600">Total Amount</p>
                   <p className="font-bold">
-                    ${vendorTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                    MVR {vendorTotal.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                   </p>
                 </div>
               </div>
@@ -149,7 +149,7 @@ const PrintLayout: React.FC<PrintLayoutProps> = ({ transactions }) => {
                         </div>
                         <div className="text-right">
                           <p className={`font-medium ${transaction.isExpense ? 'text-red-600' : 'text-green-600'}`}>
-                            {transaction.isExpense ? '-' : '+'}${transaction.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
+                            {transaction.isExpense ? '-' : '+'}MVR {transaction.amount.toLocaleString('en-US', { minimumFractionDigits: 2 })}
                           </p>
                         </div>
                       </div>
