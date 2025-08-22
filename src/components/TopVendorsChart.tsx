@@ -1,6 +1,6 @@
 import { useMemo } from 'react';
-import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer } from 'recharts';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Transaction, VendorSpending } from '@/types/financial';
 
 interface TopVendorsChartProps {
@@ -50,21 +50,6 @@ const TopVendorsChart = ({ transactions, topN = 10 }: TopVendorsChartProps) => {
     }).format(value);
   };
   
-  const CustomTooltip = ({ active, payload, label }: any) => {
-    if (active && payload && payload.length) {
-      const data = payload[0].payload;
-      return (
-        <div className="bg-card border border-border rounded-lg p-3 shadow-lg">
-          <p className="font-semibold">{data.vendor}</p>
-          <p className="text-sm text-muted-foreground">
-            {formatCurrency(data.amount)} • {data.transactions} transaction{data.transactions !== 1 ? 's' : ''}
-          </p>
-        </div>
-      );
-    }
-    return null;
-  };
-  
   return (
     <Card className="financial-card">
       <CardHeader>
@@ -72,37 +57,29 @@ const TopVendorsChart = ({ transactions, topN = 10 }: TopVendorsChartProps) => {
       </CardHeader>
       <CardContent>
         {vendorData.length > 0 ? (
-          <div className="chart-container">
-            <ResponsiveContainer width="100%" height={300}>
-              <BarChart
-                data={vendorData}
-                layout="horizontal"
-                margin={{ top: 5, right: 30, left: 5, bottom: 5 }}
-              >
-                <CartesianGrid strokeDasharray="3 3" className="opacity-30" />
-                <XAxis 
-                  type="number" 
-                  tickFormatter={formatCurrency}
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
-                  axisLine={false}
-                />
-                <YAxis 
-                  type="category" 
-                  dataKey="vendor"
-                  tick={{ fontSize: 12 }}
-                  tickLine={false}
-                  axisLine={false}
-                  width={120}
-                />
-                <Tooltip content={<CustomTooltip />} />
-                <Bar 
-                  dataKey="amount" 
-                  fill="hsl(var(--secondary))"
-                  radius={[0, 4, 4, 0]}
-                />
-              </BarChart>
-            </ResponsiveContainer>
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="font-semibold">Vendor</TableHead>
+                  <TableHead className="text-right font-semibold">Total Spent</TableHead>
+                  <TableHead className="text-right font-semibold">Transactions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {vendorData.map((vendor, index) => (
+                  <TableRow key={vendor.vendor}>
+                    <TableCell className="font-medium">{vendor.vendor}</TableCell>
+                    <TableCell className="text-right font-mono">
+                      {formatCurrency(vendor.amount)}
+                    </TableCell>
+                    <TableCell className="text-right text-muted-foreground">
+                      {vendor.transactions}
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
           </div>
         ) : (
           <div className="text-center text-muted-foreground py-8">
