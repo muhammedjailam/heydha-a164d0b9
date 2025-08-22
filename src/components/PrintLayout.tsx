@@ -23,9 +23,15 @@ const PrintLayout: React.FC<PrintLayoutProps> = ({ transactions }) => {
   const startDate = dates[0];
   const endDate = dates[dates.length - 1];
   
+  // Clean vendor name function
+  const cleanVendorName = (description: string): string => {
+    const vendor = description.split(' ')[0] || 'Unknown';
+    return vendor.replace(/="/g, '').replace(/"/g, '');
+  };
+  
   // Group transactions by vendor
   const vendorGroups = transactions.reduce((acc, transaction) => {
-    const vendor = transaction.description.split(' ')[0] || 'Unknown';
+    const vendor = cleanVendorName(transaction.description);
     if (!acc[vendor]) {
       acc[vendor] = [];
     }
