@@ -3,7 +3,7 @@ import { Alert, AlertDescription } from '@/components/ui/alert';
 
 const PrivacyDisclaimer = () => {
   return (
-    <Alert className="bg-primary/10 border-primary/30 mb-6">
+    <Alert className="flex items-center bg-primary/10 border-primary/30 mb-6">
       <div className="flex items-center gap-2">
         <Shield className="h-4 w-4 text-primary" />
         <Lock className="h-4 w-4 text-primary" />
