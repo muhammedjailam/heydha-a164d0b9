@@ -7,10 +7,11 @@ import { Transaction, VendorSpending } from '@/types/financial';
 
 interface TopVendorsChartProps {
   transactions: Transaction[];
+  onCategoryUpdate: (transactionId: string, category: string) => void;
   topN?: number;
 }
 
-const TopVendorsChart = ({ transactions, topN = 10 }: TopVendorsChartProps) => {
+const TopVendorsChart = ({ transactions, onCategoryUpdate, topN = 10 }: TopVendorsChartProps) => {
   const [expandedVendors, setExpandedVendors] = useState<Set<string>>(new Set());
   
   const cleanVendorName = (description: string): string => {
