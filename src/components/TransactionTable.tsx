@@ -19,7 +19,8 @@ interface TransactionTableProps {
 interface GroupedTransactions {
   [date: string]: {
     transactions: Transaction[];
-    totalAmount: number;
+    totalExpenses: number;
+    totalIncome: number;
   };
 }
 
@@ -50,13 +51,16 @@ const TransactionTable = ({ transactions, onCategoryUpdate }: TransactionTablePr
       if (!grouped[dateKey]) {
         grouped[dateKey] = {
           transactions: [],
-          totalAmount: 0
+          totalExpenses: 0,
+          totalIncome: 0
         };
       }
       
       grouped[dateKey].transactions.push(transaction);
       if (transaction.isExpense) {
-        grouped[dateKey].totalAmount += transaction.amount;
+        grouped[dateKey].totalExpenses += transaction.amount;
+      } else {
+        grouped[dateKey].totalIncome += transaction.amount;
       }
     });
     
@@ -157,10 +161,15 @@ const TransactionTable = ({ transactions, onCategoryUpdate }: TransactionTablePr
                       </span>
                     </div>
                     
-                    <div className="text-right">
-                      {dayData.totalAmount > 0 && (
+                    <div className="text-right space-y-1">
+                      {dayData.totalExpenses > 0 && (
                         <div className="text-expense font-semibold">
-                          -{formatCurrency(dayData.totalAmount)}
+                          -{formatCurrency(dayData.totalExpenses)}
+                        </div>
+                      )}
+                      {dayData.totalIncome > 0 && (
+                        <div className="text-green-600 font-semibold">
+                          +{formatCurrency(dayData.totalIncome)}
                         </div>
                       )}
                     </div>
