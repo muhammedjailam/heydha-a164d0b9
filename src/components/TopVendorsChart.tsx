@@ -104,11 +104,10 @@ const TopVendorsChart = ({ transactions, topN = 10, onCategoryUpdate }: TopVendo
         transactions: data.count,
         individualTransactions: data.transactions.sort((a, b) => b.date.getTime() - a.date.getTime())
       }))
-      .sort((a, b) => b.amount - a.amount)
-      .slice(0, topN);
+      .sort((a, b) => b.amount - a.amount);
       
     return vendorArray;
-  }, [transactions, topN, truncateVendor, cleanVendorName]);
+  }, [transactions, truncateVendor, cleanVendorName]);
   
   const toggleVendorExpansion = (vendor: string) => {
     setExpandedVendors(prev => {
@@ -133,7 +132,7 @@ const TopVendorsChart = ({ transactions, topN = 10, onCategoryUpdate }: TopVendo
     <>
       <Card className="financial-card">
         <CardHeader>
-          <CardTitle className="gradient-text">Top Vendors by Spending</CardTitle>
+          <CardTitle className="gradient-text">All Vendors by Spending</CardTitle>
         </CardHeader>
         <CardContent>
           {vendorData.length > 0 ? (
