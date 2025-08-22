@@ -9,6 +9,15 @@ interface TopVendorsChartProps {
 }
 
 const TopVendorsChart = ({ transactions, topN = 10 }: TopVendorsChartProps) => {
+  const cleanVendorName = (description: string): string => {
+    // Remove =" and extra quotes and clean up the description
+    return description
+      .replace(/^="|"$/g, '') // Remove =" at start and " at end
+      .replace(/^""|""$/g, '') // Remove double quotes
+      .replace(/^"|"$/g, '')   // Remove single quotes
+      .trim();
+  };
+
   const truncateVendor = (vendor: string, maxLength: number = 25): string => {
     return vendor.length > maxLength ? vendor.substring(0, maxLength) + '...' : vendor;
   };
@@ -20,7 +29,7 @@ const TopVendorsChart = ({ transactions, topN = 10 }: TopVendorsChartProps) => {
     const vendorTotals: { [vendor: string]: { amount: number; count: number } } = {};
     
     expenses.forEach(transaction => {
-      const vendor = transaction.description;
+      const vendor = cleanVendorName(transaction.description);
       if (!vendorTotals[vendor]) {
         vendorTotals[vendor] = { amount: 0, count: 0 };
       }
@@ -39,7 +48,7 @@ const TopVendorsChart = ({ transactions, topN = 10 }: TopVendorsChartProps) => {
       .slice(0, topN);
       
     return vendorArray;
-  }, [transactions, topN, truncateVendor]);
+  }, [transactions, topN, truncateVendor, cleanVendorName]);
   
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
