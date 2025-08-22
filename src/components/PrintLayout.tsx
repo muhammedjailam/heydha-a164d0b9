@@ -142,7 +142,7 @@ const PrintLayout: React.FC<PrintLayoutProps> = ({ transactions }) => {
                     {dateGroups[date].map((transaction) => (
                       <div key={transaction.id} className="flex justify-between items-center py-1 px-3 bg-gray-50 rounded text-sm">
                         <div className="flex-1">
-                          <p className="font-medium">{transaction.description}</p>
+                          <p className="font-medium">{cleanVendorName(transaction.description)}</p>
                           {transaction.category && (
                             <p className="text-gray-600 text-xs">{transaction.category}</p>
                           )}
