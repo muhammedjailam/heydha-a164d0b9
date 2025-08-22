@@ -8,6 +8,7 @@ import KPICards from '@/components/KPICards';
 import SpendingChart from '@/components/SpendingChart';
 import CategoryChart from '@/components/CategoryChart';
 import TopVendorsChart from '@/components/TopVendorsChart';
+import TopVendorsByIncomeChart from '@/components/TopVendorsByIncomeChart';
 import TransactionTable from '@/components/TransactionTable';
 import { Transaction } from '@/types/financial';
 import { parseCSV, getStatementPeriod } from '@/utils/csvParser';
@@ -124,6 +125,9 @@ const Index = () => {
               transactions={transactions} 
               onCategoryUpdate={handleCategoryUpdate}
             />
+
+            {/* Top Vendors by Income Chart */}
+            <TopVendorsByIncomeChart transactions={transactions} />
 
             {/* Transaction Table */}
             <TransactionTable

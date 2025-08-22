@@ -1,0 +1,166 @@
+import { useMemo, useState } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { format } from 'date-fns';
+import { Transaction } from '@/types/financial';
+
+interface TopVendorsByIncomeChartProps {
+  transactions: Transaction[];
+  topN?: number;
+}
+
+const TopVendorsByIncomeChart = ({ transactions, topN = 10 }: TopVendorsByIncomeChartProps) => {
+  const [expandedVendors, setExpandedVendors] = useState<Set<string>>(new Set());
+  
+  const cleanVendorName = (description: string): string => {
+    // Remove =\" and extra quotes and clean up the description
+    return description
+      .replace(/^=\\\"|\\\"$/g, '') // Remove =\" at start and \" at end
+      .replace(/^\\\"\\\"|\\\"\\\"$/g, '') // Remove double quotes
+      .replace(/^\\\"|\\\"$/g, '')   // Remove single quotes
+      .trim();
+  };
+
+  const truncateVendor = (vendor: string, maxLength: number = 25): string => {
+    return vendor.length > maxLength ? vendor.substring(0, maxLength) + '...' : vendor;
+  };
+  
+  const vendorData = useMemo(() => {
+    const income = transactions.filter(t => !t.isExpense);
+    
+    // Group by vendor (description) and keep individual transactions
+    const vendorTotals: { [vendor: string]: { amount: number; count: number; transactions: Transaction[] } } = {};
+    
+    income.forEach(transaction => {
+      const vendor = cleanVendorName(transaction.description);
+      if (!vendorTotals[vendor]) {
+        vendorTotals[vendor] = { amount: 0, count: 0, transactions: [] };
+      }
+      vendorTotals[vendor].amount += transaction.amount;
+      vendorTotals[vendor].count += 1;
+      vendorTotals[vendor].transactions.push(transaction);
+    });
+    
+    // Convert to array and sort by amount
+    const vendorArray = Object.entries(vendorTotals)
+      .map(([vendor, data]) => ({
+        vendor: truncateVendor(vendor),
+        fullVendor: vendor,
+        amount: data.amount,
+        transactions: data.count,
+        individualTransactions: data.transactions.sort((a, b) => b.date.getTime() - a.date.getTime())
+      }))
+      .sort((a, b) => b.amount - a.amount)
+      .slice(0, topN);
+      
+    return vendorArray;
+  }, [transactions, topN, truncateVendor, cleanVendorName]);
+  
+  const toggleVendorExpansion = (vendor: string) => {
+    setExpandedVendors(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(vendor)) {
+        newSet.delete(vendor);
+      } else {
+        newSet.add(vendor);
+      }
+      return newSet;
+    });
+  };
+  
+  const formatCurrency = (value: number) => {
+    return new Intl.NumberFormat('en-US', {
+      style: 'currency',
+      currency: 'USD',
+      minimumFractionDigits: 0,
+      maximumFractionDigits: 0
+    }).format(value);
+  };
+  
+  return (
+    <Card className="financial-card">
+      <CardHeader>
+        <CardTitle className="gradient-text">Top Vendors by Income</CardTitle>
+      </CardHeader>
+      <CardContent>
+        {vendorData.length > 0 ? (
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead className="font-semibold">Vendor</TableHead>
+                  <TableHead className="text-right font-semibold">Total Income</TableHead>
+                  <TableHead className="text-right font-semibold">Transactions</TableHead>
+                  <TableHead className="text-right font-semibold">Category</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {vendorData.map((vendor) => {
+                  const isExpanded = expandedVendors.has(vendor.fullVendor);
+                  return (
+                    <>
+                      {/* Vendor Summary Row */}
+                      <TableRow 
+                        key={vendor.vendor}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => toggleVendorExpansion(vendor.fullVendor)}
+                      >
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                            {vendor.vendor}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-mono text-green-600">
+                          {formatCurrency(vendor.amount)}
+                        </TableCell>
+                        <TableCell className="text-right text-muted-foreground">
+                          {vendor.transactions}
+                        </TableCell>
+                        <TableCell className="text-right text-muted-foreground">
+                          Income
+                        </TableCell>
+                      </TableRow>
+                      
+                      {/* Individual Transaction Rows */}
+                      {isExpanded && vendor.individualTransactions.map((transaction) => (
+                        <TableRow 
+                          key={`${vendor.fullVendor}-${transaction.id}`}
+                          className="bg-muted/20 border-l-4 border-l-green-500"
+                        >
+                          <TableCell className="pl-8 text-sm text-muted-foreground">
+                            {format(transaction.date, 'MMM dd, yyyy')}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm text-green-600">
+                            {formatCurrency(transaction.amount)}
+                          </TableCell>
+                          <TableCell className="text-right text-sm text-muted-foreground">
+                            -
+                          </TableCell>
+                          <TableCell className="text-right text-sm text-muted-foreground">
+                            {transaction.category || 'Income'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </>
+                  );
+                })}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          <div className="text-center text-muted-foreground py-8">
+            No income data available
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+};
+
+export default TopVendorsByIncomeChart;
