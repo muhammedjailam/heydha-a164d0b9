@@ -178,7 +178,7 @@ const TopVendorsChart = ({ transactions, topN = 10, onCategoryUpdate }: TopVendo
                               value={getVendorCategory(vendor.fullVendor) || ''}
                               onValueChange={(value) => handleVendorCategoryChange(vendor.fullVendor, value, vendor.individualTransactions)}
                             >
-                              <SelectTrigger className="w-32 bg-background border-border z-50">
+                              <SelectTrigger className="w-full bg-background border-border z-50">
                                 <SelectValue placeholder="Select..." />
                               </SelectTrigger>
                               <SelectContent className="bg-background border-border shadow-lg z-50">
