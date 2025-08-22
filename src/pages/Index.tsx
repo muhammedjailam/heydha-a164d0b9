@@ -58,8 +58,8 @@ const Index = () => {
   }, []);
 
   const handleExportPDF = useCallback(() => {
-    exportToPDF('dashboard-content');
-  }, []);
+    exportToPDF(transactions);
+  }, [transactions]);
 
   // Calculate KPIs
   const totalIncome = transactions

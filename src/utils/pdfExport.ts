@@ -1,28 +1,43 @@
 import html2canvas from 'html2canvas';
 import jsPDF from 'jspdf';
+import { createRoot } from 'react-dom/client';
+import React from 'react';
+import PrintLayout from '@/components/PrintLayout';
+import { Transaction } from '@/types/financial';
 
-export const exportToPDF = async (elementId: string, filename: string = 'financial-dashboard.pdf') => {
+export const exportToPDF = async (transactions: Transaction[], filename: string = 'financial-dashboard.pdf') => {
   try {
-    const element = document.getElementById(elementId);
-    if (!element) {
-      throw new Error('Dashboard element not found');
-    }
-
     // Show a loading state
     const loadingToast = document.createElement('div');
     loadingToast.className = 'fixed top-4 right-4 bg-primary text-primary-foreground px-4 py-2 rounded-lg shadow-lg z-50';
     loadingToast.textContent = 'Generating PDF...';
     document.body.appendChild(loadingToast);
 
-    // Create canvas from the dashboard
-    const canvas = await html2canvas(element, {
+    // Create a temporary container for the print layout
+    const printContainer = document.createElement('div');
+    printContainer.style.position = 'absolute';
+    printContainer.style.left = '-9999px';
+    printContainer.style.top = '0';
+    printContainer.style.width = '210mm'; // A4 width
+    printContainer.style.background = 'white';
+    document.body.appendChild(printContainer);
+
+    // Render the PrintLayout component
+    const root = createRoot(printContainer);
+    root.render(React.createElement(PrintLayout, { transactions }));
+
+    // Wait for rendering to complete
+    await new Promise(resolve => setTimeout(resolve, 1000));
+
+    // Create canvas from the print layout
+    const canvas = await html2canvas(printContainer, {
       backgroundColor: '#ffffff',
-      scale: 2, // Higher resolution
+      scale: 1.5, // Higher resolution for print
       useCORS: true,
       allowTaint: false,
       logging: false,
-      height: element.scrollHeight,
-      width: element.scrollWidth
+      height: printContainer.scrollHeight,
+      width: printContainer.scrollWidth
     });
 
     // Calculate PDF dimensions
@@ -71,6 +86,10 @@ export const exportToPDF = async (elementId: string, filename: string = 'financi
         heightLeft -= pageHeight;
       }
     }
+    
+    // Clean up
+    root.unmount();
+    document.body.removeChild(printContainer);
     
     // Save the PDF
     pdf.save(filename);
