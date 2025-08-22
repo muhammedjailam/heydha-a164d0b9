@@ -2,6 +2,7 @@ import { useState, useCallback } from 'react';
 import { Download } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { useToast } from '@/hooks/use-toast';
+import { ThemeToggle } from '@/components/theme-toggle';
 import PrivacyDisclaimer from '@/components/PrivacyDisclaimer';
 import FileUpload from '@/components/FileUpload';
 import KPICards from '@/components/KPICards';
@@ -86,16 +87,19 @@ const Index = () => {
             </p>
           </div>
           
-          {hasData && (
-            <Button
-              onClick={handleExportPDF}
-              className="bg-secondary hover:bg-secondary/90 text-secondary-foreground"
-              size="lg"
-            >
-              <Download className="mr-2 h-4 w-4" />
-              Download PDF
-            </Button>
-          )}
+          <div className="flex gap-3 items-center">
+            <ThemeToggle />
+            {hasData && (
+              <Button
+                onClick={handleExportPDF}
+                className="bg-secondary hover:bg-secondary/90 text-secondary-foreground"
+                size="lg"
+              >
+                <Download className="mr-2 h-4 w-4" />
+                Download PDF
+              </Button>
+            )}
+          </div>
         </div>
 
         {/* Privacy Disclaimer */}
