@@ -1,6 +1,8 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
+import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { format } from 'date-fns';
 import { Transaction, VendorSpending } from '@/types/financial';
 
 interface TopVendorsChartProps {
@@ -9,6 +11,8 @@ interface TopVendorsChartProps {
 }
 
 const TopVendorsChart = ({ transactions, topN = 10 }: TopVendorsChartProps) => {
+  const [expandedVendors, setExpandedVendors] = useState<Set<string>>(new Set());
+  
   const cleanVendorName = (description: string): string => {
     // Remove =" and extra quotes and clean up the description
     return description
@@ -25,30 +29,45 @@ const TopVendorsChart = ({ transactions, topN = 10 }: TopVendorsChartProps) => {
   const vendorData = useMemo(() => {
     const expenses = transactions.filter(t => t.isExpense);
     
-    // Group by vendor (description)
-    const vendorTotals: { [vendor: string]: { amount: number; count: number } } = {};
+    // Group by vendor (description) and keep individual transactions
+    const vendorTotals: { [vendor: string]: { amount: number; count: number; transactions: Transaction[] } } = {};
     
     expenses.forEach(transaction => {
       const vendor = cleanVendorName(transaction.description);
       if (!vendorTotals[vendor]) {
-        vendorTotals[vendor] = { amount: 0, count: 0 };
+        vendorTotals[vendor] = { amount: 0, count: 0, transactions: [] };
       }
       vendorTotals[vendor].amount += transaction.amount;
       vendorTotals[vendor].count += 1;
+      vendorTotals[vendor].transactions.push(transaction);
     });
     
     // Convert to array and sort by amount
-    const vendorArray: VendorSpending[] = Object.entries(vendorTotals)
+    const vendorArray = Object.entries(vendorTotals)
       .map(([vendor, data]) => ({
         vendor: truncateVendor(vendor),
+        fullVendor: vendor,
         amount: data.amount,
-        transactions: data.count
+        transactions: data.count,
+        individualTransactions: data.transactions.sort((a, b) => b.date.getTime() - a.date.getTime())
       }))
       .sort((a, b) => b.amount - a.amount)
       .slice(0, topN);
       
     return vendorArray;
   }, [transactions, topN, truncateVendor, cleanVendorName]);
+  
+  const toggleVendorExpansion = (vendor: string) => {
+    setExpandedVendors(prev => {
+      const newSet = new Set(prev);
+      if (newSet.has(vendor)) {
+        newSet.delete(vendor);
+      } else {
+        newSet.add(vendor);
+      }
+      return newSet;
+    });
+  };
   
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
@@ -76,17 +95,54 @@ const TopVendorsChart = ({ transactions, topN = 10 }: TopVendorsChartProps) => {
                 </TableRow>
               </TableHeader>
               <TableBody>
-                {vendorData.map((vendor, index) => (
-                  <TableRow key={vendor.vendor}>
-                    <TableCell className="font-medium">{vendor.vendor}</TableCell>
-                    <TableCell className="text-right font-mono">
-                      {formatCurrency(vendor.amount)}
-                    </TableCell>
-                    <TableCell className="text-right text-muted-foreground">
-                      {vendor.transactions}
-                    </TableCell>
-                  </TableRow>
-                ))}
+                {vendorData.map((vendor) => {
+                  const isExpanded = expandedVendors.has(vendor.fullVendor);
+                  return (
+                    <>
+                      {/* Vendor Summary Row */}
+                      <TableRow 
+                        key={vendor.vendor}
+                        className="cursor-pointer hover:bg-muted/50"
+                        onClick={() => toggleVendorExpansion(vendor.fullVendor)}
+                      >
+                        <TableCell className="font-medium">
+                          <div className="flex items-center gap-2">
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4" />
+                            )}
+                            {vendor.vendor}
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {formatCurrency(vendor.amount)}
+                        </TableCell>
+                        <TableCell className="text-right text-muted-foreground">
+                          {vendor.transactions}
+                        </TableCell>
+                      </TableRow>
+                      
+                      {/* Individual Transaction Rows */}
+                      {isExpanded && vendor.individualTransactions.map((transaction) => (
+                        <TableRow 
+                          key={`${vendor.fullVendor}-${transaction.id}`}
+                          className="bg-muted/20 border-l-4 border-l-secondary"
+                        >
+                          <TableCell className="pl-8 text-sm text-muted-foreground">
+                            {format(transaction.date, 'MMM dd, yyyy')}
+                          </TableCell>
+                          <TableCell className="text-right font-mono text-sm">
+                            {formatCurrency(transaction.amount)}
+                          </TableCell>
+                          <TableCell className="text-right text-sm text-muted-foreground">
+                            {transaction.category || 'Uncategorized'}
+                          </TableCell>
+                        </TableRow>
+                      ))}
+                    </>
+                  );
+                })}
               </TableBody>
             </Table>
           </div>
