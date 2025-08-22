@@ -9,6 +9,10 @@ interface TopVendorsChartProps {
 }
 
 const TopVendorsChart = ({ transactions, topN = 10 }: TopVendorsChartProps) => {
+  const truncateVendor = (vendor: string, maxLength: number = 25): string => {
+    return vendor.length > maxLength ? vendor.substring(0, maxLength) + '...' : vendor;
+  };
+  
   const vendorData = useMemo(() => {
     const expenses = transactions.filter(t => t.isExpense);
     
@@ -35,11 +39,7 @@ const TopVendorsChart = ({ transactions, topN = 10 }: TopVendorsChartProps) => {
       .slice(0, topN);
       
     return vendorArray;
-  }, [transactions, topN]);
-  
-  const truncateVendor = (vendor: string, maxLength: number = 25): string => {
-    return vendor.length > maxLength ? vendor.substring(0, maxLength) + '...' : vendor;
-  };
+  }, [transactions, topN, truncateVendor]);
   
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {

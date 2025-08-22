@@ -13,6 +13,17 @@ interface SpendingChartProps {
 const SpendingChart = ({ transactions }: SpendingChartProps) => {
   const [filter, setFilter] = useState<DateFilter>({ type: 'daily' });
   
+  const formatDateLabel = (dateStr: string, type: DateFilter['type']): string => {
+    switch (type) {
+      case 'monthly':
+        return format(parseISO(dateStr + '-01'), 'MMM yyyy');
+      case 'yearly':
+        return dateStr;
+      default: // daily
+        return format(parseISO(dateStr), 'MMM dd');
+    }
+  };
+  
   const chartData = useMemo(() => {
     let filteredTransactions = transactions.filter(t => t.isExpense);
     
@@ -56,18 +67,7 @@ const SpendingChart = ({ transactions }: SpendingChartProps) => {
         label: formatDateLabel(date, filter.type)
       }))
       .sort((a, b) => a.date.localeCompare(b.date));
-  }, [transactions, filter]);
-  
-  const formatDateLabel = (dateStr: string, type: DateFilter['type']): string => {
-    switch (type) {
-      case 'monthly':
-        return format(parseISO(dateStr + '-01'), 'MMM yyyy');
-      case 'yearly':
-        return dateStr;
-      default: // daily
-        return format(parseISO(dateStr), 'MMM dd');
-    }
-  };
+  }, [transactions, filter, formatDateLabel]);
   
   const formatCurrency = (value: number) => {
     return new Intl.NumberFormat('en-US', {
