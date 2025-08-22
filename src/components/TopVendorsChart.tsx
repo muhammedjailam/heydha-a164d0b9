@@ -208,10 +208,10 @@ const TopVendorsChart = ({ transactions, topN = 10, onCategoryUpdate }: TopVendo
                               {formatCurrency(transaction.amount)}
                             </TableCell>
                             <TableCell className="text-right text-sm text-muted-foreground">
-                              {transaction.category || 'Uncategorized'}
+                              -
                             </TableCell>
                             <TableCell className="text-right text-sm text-muted-foreground">
-                              -
+                              {transaction.category || 'Uncategorized'}
                             </TableCell>
                           </TableRow>
                         ))}
