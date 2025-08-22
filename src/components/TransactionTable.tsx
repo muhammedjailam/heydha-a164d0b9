@@ -27,6 +27,15 @@ const TransactionTable = ({ transactions, onCategoryUpdate }: TransactionTablePr
   
   const availableCategories = getAllCategories();
   
+  const cleanVendorName = (description: string): string => {
+    // Remove =" and extra quotes and clean up the description
+    return description
+      .replace(/^="|"$/g, '') // Remove =" at start and " at end
+      .replace(/^""|""$/g, '') // Remove double quotes
+      .replace(/^"|"$/g, '')   // Remove single quotes
+      .trim();
+  };
+  
   const groupedTransactions = useMemo(() => {
     const grouped: GroupedTransactions = {};
     
@@ -153,7 +162,7 @@ const TransactionTable = ({ transactions, onCategoryUpdate }: TransactionTablePr
                         {/* Transaction Details */}
                         <div className="flex-1 min-w-0">
                           <div className="font-medium truncate">
-                            {transaction.description}
+                            {cleanVendorName(transaction.description)}
                           </div>
                           <div className="text-sm text-muted-foreground">
                             {transaction.isExpense ? 'Expense' : 'Income'}
