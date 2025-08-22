@@ -14,11 +14,11 @@ const TopVendorsByIncomeChart = ({ transactions, topN = 10 }: TopVendorsByIncome
   const [expandedVendors, setExpandedVendors] = useState<Set<string>>(new Set());
   
   const cleanVendorName = (description: string): string => {
-    // Remove =\" and extra quotes and clean up the description
+    // Remove =" and extra quotes and clean up the description
     return description
-      .replace(/^=\\\"|\\\"$/g, '') // Remove =\" at start and \" at end
-      .replace(/^\\\"\\\"|\\\"\\\"$/g, '') // Remove double quotes
-      .replace(/^\\\"|\\\"$/g, '')   // Remove single quotes
+      .replace(/="/g, '') // Remove =" anywhere in the string
+      .replace(/^"|"$/g, '') // Remove quotes at start and end
+      .replace(/^""|""$/g, '') // Remove double quotes
       .trim();
   };
 
