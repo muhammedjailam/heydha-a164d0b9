@@ -63,12 +63,10 @@ const CategoryChart = ({ transactions, onCategoryUpdate }: CategoryChartProps) =
   }, [transactions]);
   
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return `MVR ${new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
-    }).format(value);
+    }).format(value)}`;
   };
   
   const handleEditCategory = (oldName: string) => {

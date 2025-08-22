@@ -70,12 +70,10 @@ const TopVendorsByIncomeChart = ({ transactions, topN = 10 }: TopVendorsByIncome
   };
   
   const formatCurrency = (value: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD',
+    return `MVR ${new Intl.NumberFormat('en-US', {
       minimumFractionDigits: 0,
       maximumFractionDigits: 0
-    }).format(value);
+    }).format(value)}`;
   };
   
   return (

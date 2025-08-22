@@ -116,10 +116,10 @@ const TransactionTable = ({ transactions, onCategoryUpdate }: TransactionTablePr
   };
   
   const formatCurrency = (amount: number) => {
-    return new Intl.NumberFormat('en-US', {
-      style: 'currency',
-      currency: 'USD'
-    }).format(amount);
+    return `MVR ${new Intl.NumberFormat('en-US', {
+      minimumFractionDigits: 2,
+      maximumFractionDigits: 2
+    }).format(amount)}`;
   };
   
   const formatDate = (dateStr: string) => {
