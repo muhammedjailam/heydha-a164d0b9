@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useState, useEffect } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
 import { Settings, Trash2, Edit2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
@@ -7,8 +7,9 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Transaction, CategoryBreakdown } from '@/types/financial';
-import { getVendorCategory, getAllCategories, updateVendorCategory } from '@/utils/categoryManager';
+import { getVendorCategory, loadCategoryMapping, saveCategoryMapping } from '@/utils/categoryManager';
 import { useToast } from '@/hooks/use-toast';
+import { useCategories, triggerGlobalCategoryRefresh } from '@/hooks/useCategories';
 
 interface CategoryChartProps {
   transactions: Transaction[];
@@ -32,9 +33,8 @@ const CategoryChart = ({ transactions, onCategoryUpdate }: CategoryChartProps) =
   const [showManageModal, setShowManageModal] = useState(false);
   const [editingCategory, setEditingCategory] = useState<string | null>(null);
   const [newCategoryName, setNewCategoryName] = useState('');
+  const { categories: availableCategories, refreshCategories } = useCategories();
   const { toast } = useToast();
-  
-  const availableCategories = getAllCategories();
   const categoryData = useMemo(() => {
     const expenses = transactions.filter(t => t.isExpense);
     const totalExpenses = expenses.reduce((sum, t) => sum + t.amount, 0);
@@ -94,6 +94,8 @@ const CategoryChart = ({ transactions, onCategoryUpdate }: CategoryChartProps) =
     
     setEditingCategory(null);
     setNewCategoryName('');
+    refreshCategories(); // Refresh the category list
+    triggerGlobalCategoryRefresh(); // Refresh all other components
     setShowManageModal(false);
   };
   
@@ -104,6 +106,18 @@ const CategoryChart = ({ transactions, onCategoryUpdate }: CategoryChartProps) =
         onCategoryUpdate?.(transaction.id, 'Uncategorized');
       }
     });
+    
+    // Remove the category from localStorage by updating all vendor mappings
+    const mapping = loadCategoryMapping();
+    Object.keys(mapping).forEach(vendor => {
+      if (mapping[vendor] === categoryName) {
+        delete mapping[vendor];
+      }
+    });
+    saveCategoryMapping(mapping);
+    
+    refreshCategories(); // Refresh the category list
+    triggerGlobalCategoryRefresh(); // Refresh all other components
     
     toast({
       title: "Category deleted",
@@ -135,7 +149,10 @@ const CategoryChart = ({ transactions, onCategoryUpdate }: CategoryChartProps) =
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setShowManageModal(true)}
+              onClick={() => {
+                refreshCategories();
+                setShowManageModal(true);
+              }}
               className="gap-2"
             >
               <Settings className="h-4 w-4" />

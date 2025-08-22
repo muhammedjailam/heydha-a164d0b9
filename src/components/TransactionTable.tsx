@@ -7,9 +7,10 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Transaction } from '@/types/financial';
-import { getAllCategories, updateVendorCategory, getVendorCategory } from '@/utils/categoryManager';
+import { updateVendorCategory, getVendorCategory } from '@/utils/categoryManager';
 import { useToast } from '@/hooks/use-toast';
 import { format } from 'date-fns';
+import { useCategories, setGlobalCategoryRefresh } from '@/hooks/useCategories';
 
 interface TransactionTableProps {
   transactions: Transaction[];
@@ -29,9 +30,11 @@ const TransactionTable = ({ transactions, onCategoryUpdate }: TransactionTablePr
   const [newCategory, setNewCategory] = useState('');
   const [showNewCategoryModal, setShowNewCategoryModal] = useState(false);
   const [currentTransaction, setCurrentTransaction] = useState<Transaction | null>(null);
+  const { categories: availableCategories, refreshCategories } = useCategories();
   const { toast } = useToast();
   
-  const availableCategories = getAllCategories();
+  // Set this component's refresh function for global updates
+  setGlobalCategoryRefresh(refreshCategories);
   
   const cleanVendorName = (description: string): string => {
     // Remove =" and extra quotes and clean up the description

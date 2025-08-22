@@ -9,8 +9,9 @@ import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { format } from 'date-fns';
 import { Transaction, VendorSpending } from '@/types/financial';
-import { getAllCategories, updateVendorCategory, getVendorCategory } from '@/utils/categoryManager';
+import { updateVendorCategory, getVendorCategory } from '@/utils/categoryManager';
 import { useToast } from '@/hooks/use-toast';
+import { useCategories, setGlobalCategoryRefresh } from '@/hooks/useCategories';
 
 interface TopVendorsChartProps {
   transactions: Transaction[];
@@ -23,9 +24,11 @@ const TopVendorsChart = ({ transactions, topN = 10, onCategoryUpdate }: TopVendo
   const [showNewCategoryModal, setShowNewCategoryModal] = useState(false);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [currentVendor, setCurrentVendor] = useState<{ name: string; transactions: Transaction[] } | null>(null);
+  const { categories: availableCategories, refreshCategories } = useCategories();
   const { toast } = useToast();
   
-  const availableCategories = getAllCategories();
+  // Set this component's refresh function for global updates
+  setGlobalCategoryRefresh(refreshCategories);
   
   const cleanVendorName = (description: string): string => {
     // Remove =" and extra quotes and clean up the description
