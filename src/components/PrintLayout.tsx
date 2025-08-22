@@ -25,8 +25,13 @@ const PrintLayout: React.FC<PrintLayoutProps> = ({ transactions }) => {
   
   // Clean vendor name function
   const cleanVendorName = (description: string): string => {
-    const vendor = description.split(' ')[0] || 'Unknown';
-    return vendor.replace(/="/g, '').replace(/"/g, '');
+    // Remove =" and extra quotes and clean up the description to show full vendor name
+    return description
+      .replace(/^="|"$/g, '') // Remove =" at start and " at end
+      .replace(/^""|""$/g, '') // Remove double quotes
+      .replace(/^"|"$/g, '')   // Remove single quotes
+      .replace(/="/g, '')      // Remove =" anywhere in the string
+      .trim();
   };
   
   // Group transactions by vendor
