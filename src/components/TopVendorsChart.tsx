@@ -2,16 +2,21 @@ import { useMemo, useState } from 'react';
 import { ChevronDown, ChevronRight } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { format } from 'date-fns';
 import { Transaction, VendorSpending } from '@/types/financial';
+import { getAllCategories, updateVendorCategory, getVendorCategory } from '@/utils/categoryManager';
 
 interface TopVendorsChartProps {
   transactions: Transaction[];
   topN?: number;
+  onCategoryUpdate?: (transactionId: string, category: string) => void;
 }
 
-const TopVendorsChart = ({ transactions, topN = 10 }: TopVendorsChartProps) => {
+const TopVendorsChart = ({ transactions, topN = 10, onCategoryUpdate }: TopVendorsChartProps) => {
   const [expandedVendors, setExpandedVendors] = useState<Set<string>>(new Set());
+  
+  const availableCategories = getAllCategories();
   
   const cleanVendorName = (description: string): string => {
     // Remove =" and extra quotes and clean up the description
@@ -24,6 +29,14 @@ const TopVendorsChart = ({ transactions, topN = 10 }: TopVendorsChartProps) => {
 
   const truncateVendor = (vendor: string, maxLength: number = 25): string => {
     return vendor.length > maxLength ? vendor.substring(0, maxLength) + '...' : vendor;
+  };
+  
+  const handleVendorCategoryChange = (vendorName: string, category: string, vendorTransactions: Transaction[]) => {
+    updateVendorCategory(vendorName, category);
+    // Update all transactions for this vendor
+    vendorTransactions.forEach(transaction => {
+      onCategoryUpdate?.(transaction.id, category);
+    });
   };
   
   const vendorData = useMemo(() => {
@@ -92,6 +105,7 @@ const TopVendorsChart = ({ transactions, topN = 10 }: TopVendorsChartProps) => {
                   <TableHead className="font-semibold">Vendor</TableHead>
                   <TableHead className="text-right font-semibold">Total Spent</TableHead>
                   <TableHead className="text-right font-semibold">Transactions</TableHead>
+                  <TableHead className="text-right font-semibold">Category</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -121,6 +135,23 @@ const TopVendorsChart = ({ transactions, topN = 10 }: TopVendorsChartProps) => {
                         <TableCell className="text-right text-muted-foreground">
                           {vendor.transactions}
                         </TableCell>
+                        <TableCell className="text-right" onClick={(e) => e.stopPropagation()}>
+                          <Select
+                            value={getVendorCategory(vendor.fullVendor) || ''}
+                            onValueChange={(value) => handleVendorCategoryChange(vendor.fullVendor, value, vendor.individualTransactions)}
+                          >
+                            <SelectTrigger className="w-32 bg-background border-border z-50">
+                              <SelectValue placeholder="Select..." />
+                            </SelectTrigger>
+                            <SelectContent className="bg-background border-border shadow-lg z-50">
+                              {availableCategories.map(category => (
+                                <SelectItem key={category} value={category}>
+                                  {category}
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                        </TableCell>
                       </TableRow>
                       
                       {/* Individual Transaction Rows */}
@@ -137,6 +168,9 @@ const TopVendorsChart = ({ transactions, topN = 10 }: TopVendorsChartProps) => {
                           </TableCell>
                           <TableCell className="text-right text-sm text-muted-foreground">
                             {transaction.category || 'Uncategorized'}
+                          </TableCell>
+                          <TableCell className="text-right text-sm text-muted-foreground">
+                            -
                           </TableCell>
                         </TableRow>
                       ))}

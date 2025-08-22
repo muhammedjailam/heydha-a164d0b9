@@ -120,7 +120,10 @@ const Index = () => {
             </div>
 
             {/* Top Vendors Chart */}
-            <TopVendorsChart transactions={transactions} />
+            <TopVendorsChart 
+              transactions={transactions} 
+              onCategoryUpdate={handleCategoryUpdate}
+            />
 
             {/* Transaction Table */}
             <TransactionTable
