@@ -1,11 +1,18 @@
-import { useMemo } from 'react';
+import { useMemo, useState } from 'react';
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip, Legend } from 'recharts';
+import { Settings, Trash2, Edit2 } from 'lucide-react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
 import { Transaction, CategoryBreakdown } from '@/types/financial';
-import { getVendorCategory } from '@/utils/categoryManager';
+import { getVendorCategory, getAllCategories, updateVendorCategory } from '@/utils/categoryManager';
+import { useToast } from '@/hooks/use-toast';
 
 interface CategoryChartProps {
   transactions: Transaction[];
+  onCategoryUpdate?: (transactionId: string, category: string) => void;
 }
 
 const COLORS = [
@@ -21,7 +28,13 @@ const COLORS = [
   'hsl(45 95% 55%)',    // Gold
 ];
 
-const CategoryChart = ({ transactions }: CategoryChartProps) => {
+const CategoryChart = ({ transactions, onCategoryUpdate }: CategoryChartProps) => {
+  const [showManageModal, setShowManageModal] = useState(false);
+  const [editingCategory, setEditingCategory] = useState<string | null>(null);
+  const [newCategoryName, setNewCategoryName] = useState('');
+  const { toast } = useToast();
+  
+  const availableCategories = getAllCategories();
   const categoryData = useMemo(() => {
     const expenses = transactions.filter(t => t.isExpense);
     const totalExpenses = expenses.reduce((sum, t) => sum + t.amount, 0);
@@ -58,6 +71,46 @@ const CategoryChart = ({ transactions }: CategoryChartProps) => {
     }).format(value);
   };
   
+  const handleEditCategory = (oldName: string) => {
+    setEditingCategory(oldName);
+    setNewCategoryName(oldName);
+    setShowManageModal(true);
+  };
+  
+  const handleSaveEdit = () => {
+    if (!editingCategory || !newCategoryName.trim()) return;
+    
+    // Update all transactions that use the old category
+    transactions.forEach(transaction => {
+      if (transaction.category === editingCategory) {
+        onCategoryUpdate?.(transaction.id, newCategoryName.trim());
+      }
+    });
+    
+    toast({
+      title: "Category updated",
+      description: `"${editingCategory}" has been renamed to "${newCategoryName.trim()}".`
+    });
+    
+    setEditingCategory(null);
+    setNewCategoryName('');
+    setShowManageModal(false);
+  };
+  
+  const handleDeleteCategory = (categoryName: string) => {
+    // Update all transactions that use this category to "Uncategorized"
+    transactions.forEach(transaction => {
+      if (transaction.category === categoryName) {
+        onCategoryUpdate?.(transaction.id, 'Uncategorized');
+      }
+    });
+    
+    toast({
+      title: "Category deleted",
+      description: `"${categoryName}" has been deleted. Transactions moved to "Uncategorized".`
+    });
+  };
+  
   const CustomTooltip = ({ active, payload }: any) => {
     if (active && payload && payload.length) {
       const data = payload[0].payload;
@@ -74,10 +127,22 @@ const CategoryChart = ({ transactions }: CategoryChartProps) => {
   };
   
   return (
-    <Card className="financial-card">
-      <CardHeader>
-        <CardTitle className="gradient-text">Expense Breakdown by Category</CardTitle>
-      </CardHeader>
+    <>
+      <Card className="financial-card">
+        <CardHeader>
+          <div className="flex justify-between items-center">
+            <CardTitle className="gradient-text">Expense Breakdown by Category</CardTitle>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setShowManageModal(true)}
+              className="gap-2"
+            >
+              <Settings className="h-4 w-4" />
+              Manage Categories
+            </Button>
+          </div>
+        </CardHeader>
       <CardContent>
         {categoryData.length > 0 ? (
           <div className="chart-container">
@@ -124,8 +189,84 @@ const CategoryChart = ({ transactions }: CategoryChartProps) => {
             No expense data available
           </div>
         )}
-      </CardContent>
-    </Card>
+        </CardContent>
+      </Card>
+      
+      {/* Manage Categories Modal */}
+      <Dialog open={showManageModal} onOpenChange={setShowManageModal}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Manage Categories</DialogTitle>
+          </DialogHeader>
+          
+          {editingCategory ? (
+            <div className="space-y-4">
+              <div className="space-y-2">
+                <Label htmlFor="editCategoryName">Category Name</Label>
+                <Input
+                  id="editCategoryName"
+                  value={newCategoryName}
+                  onChange={(e) => setNewCategoryName(e.target.value)}
+                  placeholder="Enter category name"
+                />
+              </div>
+              <div className="flex justify-end space-x-2">
+                <Button
+                  variant="outline"
+                  onClick={() => {
+                    setEditingCategory(null);
+                    setNewCategoryName('');
+                  }}
+                >
+                  Cancel
+                </Button>
+                <Button onClick={handleSaveEdit} disabled={!newCategoryName.trim()}>
+                  Save Changes
+                </Button>
+              </div>
+            </div>
+          ) : (
+            <div className="space-y-4">
+              <div className="max-h-80 overflow-y-auto space-y-2">
+                {availableCategories.map((category) => (
+                  <div key={category} className="flex items-center justify-between p-3 border rounded-lg">
+                    <span className="font-medium">{category}</span>
+                    <div className="flex gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => handleEditCategory(category)}
+                        className="gap-1"
+                      >
+                        <Edit2 className="h-3 w-3" />
+                        Edit
+                      </Button>
+                      {category !== 'Uncategorized' && (
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteCategory(category)}
+                          className="gap-1 text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-3 w-3" />
+                          Delete
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+              
+              {availableCategories.length === 0 && (
+                <div className="text-center text-muted-foreground py-8">
+                  No categories available
+                </div>
+              )}
+            </div>
+          )}
+        </DialogContent>
+      </Dialog>
+    </>
   );
 };
 

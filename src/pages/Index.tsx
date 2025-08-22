@@ -117,7 +117,10 @@ const Index = () => {
             {/* Charts Grid */}
             <div className="grid grid-cols-1 xl:grid-cols-2 gap-8">
               <SpendingChart transactions={transactions} />
-              <CategoryChart transactions={transactions} />
+              <CategoryChart 
+                transactions={transactions}
+                onCategoryUpdate={handleCategoryUpdate}
+              />
             </div>
 
             {/* Top Vendors Chart */}
